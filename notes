@@ -5,6 +5,15 @@ timedatectl list-timezones
 sudo timedatectl set-timezone your_time_zone
 
 ---------------------
+List all Open Files with lsof Command
+
+lsof
+lsof -i
+List User Specific Opened Files
+lsof -u tecmint
+
+
+---------------------
 Configure NTP client
 sudo apt-get install ntp
 The ntpd configuration file is located at /etc/ntp.conf. Open this file in a text editor:
@@ -12,3 +21,110 @@ This file contains the list of NTP servers that will be used for time synchroniz
 Next, restart the NTP deamon with the sudo service ntp reload command:
 ntpq -p command to show a list of all the NTP servers
 ---------------------
+IPTABLES
+
+Reject from IP source:
+sudo iptables -A INPUT -s 10.0.3.6 -j DROP or REJECT
+
+Flush INPUT
+sudo iptables -F INPUT
+
+Drop All
+sudo iptables -A INPUT -J DROP
+
+
+Accept from IP
+sudo iptables -A INPUT -s 10.0.3.6 -j ACCEPT
+
+Remove rule #2 for example
+iptable -D INPUT 2
+
+
+Reject OUTPUT based on protocol & port number
+iptables -A OUTPUT -d udp --dport 53 -j DROP
+
+Block an IP address from accessing your server
+iptables -A INPUT -s IP-ADDRESS -j DROP
+
+Block server access from an IP address only on a specific port on the server
+iptables -A INPUT -s IP-ADDRESS -p tcp --destination-port port_number -j DROP
+
+ACCEPT only ssh from IP
+sudo iptables -I INPUT -s 192.168.1.65 -p tcp --dport 22 -j ACCEPT
+---------------------
+
+Find All Failed SSH login Attempts in Linux
+grep "Failed password" /var/log/auth.log
+egrep "Failed|Failure" /var/log/auth.log
+---------------------
+Enabling apparmor for Apache2 in Ubuntu 18.04
+apt policy apparmor
+apt install libapache2-mod-apparmor
+aa-enforce /etc/apparmor.d/usr.sbin.apache2
+If you are getting error like aa-enforce not found. int apparmor-utils
+
+apt-get install apparmor-utils
+To configure your appache, I followed the below url:
+
+a2enmod mpm_prefork
+a2enmod apparmor
+service apache2 restart
+
+
+Ubuntu 16.04: Enforce usr.sbin.sshd profile to AppArmor
+
+Modify and apply usr.sbin.sshd profile
+sudo cp /usr/share/doc/apparmor-profiles/extras/usr.sbin.sshd \
+       /etc/apparmor.d/
+Modify /etc/apparmor.d/usr.sbin.sshd with the following patch. This patch is created by DENIED message.
+
+$ cd /etc/apparmor.d/
+$ cat <<EOF | sudo patch -p1
+--- a/usr.sbin.sshd       2017-03-16 10:11:02.000000000 +0900
++++ b/usr.sbin.sshd       2017-06-14 13:38:47.862170542 +0900
+@@ -21,6 +21,7 @@
+   #include <abstractions/consoles>
+   #include <abstractions/nameservice>
+   #include <abstractions/wutmp>
++  #include <abstractions/dbus>
+
+   capability sys_chroot,
+   capability sys_resource,
+@@ -32,6 +33,8 @@
+   capability setgid,
+   capability setuid,
+   capability audit_control,
++  capability audit_write,
++  capability net_admin,
+   capability dac_override,
+   capability dac_read_search,
+
+@@ -51,10 +54,16 @@
+   /var/log/btmp r,
+   /{,var/}run w,
+   /{,var/}run/sshd{,.init}.pid wl,
++  /{,var/}run/systemd/notify w,
++
++  ptrace,
+
+   @{PROC}/@{pid}/fd/ r,
+-  @{PROC}/@{pid}/loginuid w,
++  @{PROC}/@{pid}/loginuid rw,
+   @{PROC}/@{pid}/limits r,
++  @{PROC}/@{pid}/uid_map r,
++  @{PROC}/@{pid}/environ r,
++  @{PROC}/cmdline r,
+
+ # should only be here for use in non-change-hat openssh
+ # duplicated from EXEC hat
+@@ -85,6 +94,7 @@
+ # duplicated from AUTHENTICATED
+   /etc/motd r,
+   /{,var/}run/motd{,.new} rw,
++  /{,var/}run/motd.dynamic{,.new} rw,
+   /tmp/ssh-*/agent.[0-9]* rwl,
+
+   /tmp/ssh-*[0-9]*/ w,
+EOF
+
+sudo aa-enforce /etc/apparmor.d/usr.sbin.sshd
