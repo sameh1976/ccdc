@@ -1,1 +1,14 @@
-Change Timezone
+Checking the Current Timezone
+timedatectl
+ls -l /etc/localtime
+timedatectl list-timezones
+sudo timedatectl set-timezone your_time_zone
+
+---------------------
+Configure NTP client
+sudo apt-get install ntp
+The ntpd configuration file is located at /etc/ntp.conf. Open this file in a text editor:
+This file contains the list of NTP servers that will be used for time synchronization. By default, Ubuntu servers will be used (e.g. 0.ubuntu.pool.ntp.org). You can add your preferred servers or leave the defaults.
+Next, restart the NTP deamon with the sudo service ntp reload command:
+ntpq -p command to show a list of all the NTP servers
+---------------------
